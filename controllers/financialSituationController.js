@@ -1,10 +1,9 @@
 import { pool } from "../server.js";
 
-const ProductsController = {
-    getAllProducts: async (req, res) => {
+const FinancialSituationController = {
+    getAllFinancialSituation: async (req, res) => {
         try {
-            const { rows } = await pool.query('SELECT * FROM products');
-
+            const { rows } = await pool.query('SELECT * FROM Financial_Situation');
             res.json(rows);
         } catch (err) {
             console.error('Error executing query', err);
@@ -13,4 +12,4 @@ const ProductsController = {
     }
 };
 
-export default ProductsController;
+export default FinancialSituationController;

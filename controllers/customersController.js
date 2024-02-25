@@ -1,7 +1,7 @@
 import { pool } from "../server.js";
 
 const CustomersController = {
-    getAllCustomers: async (req, res): Promise<void> => {
+    getAllCustomers: async (req, res) => {
         try {
             const { rows } = await pool.query('SELECT * FROM customers');
 
