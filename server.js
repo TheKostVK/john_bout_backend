@@ -41,11 +41,14 @@ app.use((req, res, next) => {
 });
 
 // Маршруты для заказчиков
-app.use('/customers/create', customersController.default.createCustomer);
+app.get('/customers', customersController.default.getAllCustomers);
+app.post('/customers', customersController.default.createCustomer);
 app.delete('/customers/:id', customersController.default.deleteCustomer);
-app.use('/customers', customersController.default.getAllCustomers);
 // Маршрут для продуктов
 app.get('/products', productsController.default.getAllProducts);
+app.post('/products', productsController.default.addProduct);
+app.put('/products/:id', productsController.default.updateProduct);
+app.delete('/products/:id', productsController.default.disableProduct);
 // Маршрут для заказов
 app.get('/orders', ordersController.default.getAllOrders);
 app.get('/orders/items', ordersController.default.getAllOrderItems);
@@ -57,6 +60,8 @@ app.get('/supplyContracts', supplyContractsController.default.getAllSupplyContra
 app.get('/financial', financialSituationController.default.getAllFinancialSituation);
 // Маршрут для складов
 app.get('/warehouses', warehousesController.default.getAllWarehouses);
+app.post('/warehouses', warehousesController.default.createWarehouse);
+app.delete('/warehouses/:id', warehousesController.default.disableWarehouse);
 
 // Порт, на котором будет запущен сервер
 const port = 3000;

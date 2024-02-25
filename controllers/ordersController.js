@@ -3,7 +3,7 @@ import { pool } from "../server.js";
 const OrdersController = {
     getAllOrders: async (req, res) => {
         try {
-            const { rows } = await pool.query('SELECT * FROM orders');
+            const { rows } = await pool.query('SELECT * FROM orders WHERE disable = false');
 
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
@@ -13,7 +13,7 @@ const OrdersController = {
     },
     getAllOrderItems: async (req, res) => {
         try {
-            const { rows } = await pool.query('SELECT * FROM Order_Items');
+            const { rows } = await pool.query('SELECT * FROM Order_Items WHERE disable = false');
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);

@@ -3,7 +3,7 @@ import { pool } from "../server.js";
 const FinancialSituationController = {
     getAllFinancialSituation: async (req, res) => {
         try {
-            const { rows } = await pool.query('SELECT * FROM Financial_Situation');
+            const { rows } = await pool.query('SELECT * FROM Financial_Situation WHERE disable = false');
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);
