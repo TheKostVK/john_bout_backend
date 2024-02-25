@@ -104,9 +104,9 @@ const ProductsController = {
                 return res.status(400).json({ success: false, error: 'Недостаточно свободного места на складе.' });
             }
 
-            // Добавляем товар на склад
-            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *';
-            const values = [ name, product_type, subtype, characteristics, false, storage_location, quantity, occupied_space, price ];
+            // Добавляем товар
+            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *';
+            const values = [ name, product_type, subtype, characteristics, false, storage_location, quantity, occupied_space, price, 0 ];
             const { rows } = await pool.query(query, values);
 
             // Увеличиваем занимаемое место на складе на соответствующее количество
@@ -133,17 +133,22 @@ const ProductsController = {
         try {
             // Получаем информацию о товаре, который отключаем
             const getProductQuery = 'SELECT * FROM products WHERE id = $1';
-            const getProductValues = [productId];
+            const getProductValues = [ productId ];
             const { rows: productRows } = await pool.query(getProductQuery, getProductValues);
 
             if (productRows.length === 0) {
                 return res.status(404).json({ success: false, error: 'Товар не найден.' });
+            } else if (productRows[0].reserved_quantity > 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Товар зарезервирован в количестве ${ productRows[0].reserved_quantit }.`
+                });
             }
 
             // Получаем информацию о складе, к которому относится товар
             const warehouseId = productRows[0].storage_location;
             const getWarehouseQuery = 'SELECT * FROM Warehouses WHERE id = $1';
-            const getWarehouseValues = [warehouseId];
+            const getWarehouseValues = [ warehouseId ];
             const { rows: warehouseRows } = await pool.query(getWarehouseQuery, getWarehouseValues);
 
             if (warehouseRows.length === 0) {
@@ -162,15 +167,15 @@ const ProductsController = {
 
             // Уменьшаем текущее количество товара на складе на количество мест, которые он занимает
             const updateWarehouseQuery = 'UPDATE Warehouses SET current_capacity = current_capacity - $1 WHERE id = $2';
-            const updateWarehouseValues = [totalOccupiedSpace, warehouseId];
+            const updateWarehouseValues = [ totalOccupiedSpace, warehouseId ];
             await pool.query(updateWarehouseQuery, updateWarehouseValues);
 
             // Устанавливаем статус товара как отключенный
             const updateProductQuery = 'UPDATE products SET disable = true WHERE id = $1 RETURNING *';
-            const updateProductValues = [productId];
+            const updateProductValues = [ productId ];
             await pool.query(updateProductQuery, updateProductValues);
 
-            res.json({ success: true, message: `Товар с id ${productId} успешно отключен.` });
+            res.json({ success: true, message: `Товар с id ${ productId } успешно отключен.` });
         } catch (error) {
             console.error('Ошибка запроса:', error);
             res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
@@ -198,14 +203,63 @@ const ProductsController = {
         }
 
         try {
-            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7 WHERE id = $5 RETURNING *';
-            const values = [ name, product_type, subtype, characteristics, productId, storage_location, quantity ];
+            // Получаем информацию о товаре, который обновляем
+            const getProductQuery = 'SELECT * FROM products WHERE id = $1';
+            const getProductValues = [ productId ];
+            const { rows: productRows } = await pool.query(getProductQuery, getProductValues);
 
+            if (productRows.length === 0) {
+                return res.status(404).json({ success: false, error: 'Товар не найден.' });
+            }
+
+            // Получаем информацию о складе, к которому относится товар
+            const warehouseId = storage_location || productRows[0].storage_location;
+            const getWarehouseQuery = 'SELECT * FROM Warehouses WHERE id = $1';
+            const getWarehouseValues = [ warehouseId ];
+            const { rows: warehouseRows } = await pool.query(getWarehouseQuery, getWarehouseValues);
+
+            if (warehouseRows.length === 0) {
+                return res.status(404).json({ success: false, error: 'Склад не найден.' });
+            }
+
+            // Вычисляем изменение количества товара на складе
+            const initialQuantity = productRows[0].quantity;
+            const updatedQuantity = quantity - initialQuantity;
+
+            // Проверяем, достаточно ли свободного места на складе
+            const occupiedSpace = productRows[0].occupied_space;
+            const totalOccupiedSpace = occupiedSpace * quantity;
+
+            if (((warehouseRows[0].current_capacity - (productRows[0].quantity * productRows[0].occupied_space)) + totalOccupiedSpace) > warehouseRows[0].capacity) {
+                return res.status(400).json({ success: false, error: 'Недостаточно свободного места на складе.' });
+            }
+
+            // Обновляем товар
+            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7 WHERE id = $5 RETURNING *';
+            const values = [ name, product_type, subtype, characteristics, productId, warehouseId, quantity ];
             const { rows } = await pool.query(query, values);
 
             if (rows.length === 0) {
                 res.status(404).json({ success: false, error: 'Товар не найден.' });
             } else {
+                // Обновляем количество товара на складе
+                let updateWarehouseQuery = 'UPDATE Warehouses SET current_capacity = current_capacity ';
+                let updateWarehouseValues;
+                if (updatedQuantity > 0) {
+                    updateWarehouseQuery += '+ $1';
+                    updateWarehouseValues = [ updatedQuantity * occupiedSpace ];
+                } else if (updatedQuantity < 0) {
+                    updateWarehouseQuery += '- $1';
+                    updateWarehouseValues = [ -updatedQuantity * occupiedSpace ];
+                } else {
+                    // Нет изменений в количестве товара
+                    updateWarehouseQuery += 'WHERE id = $2';
+                    updateWarehouseValues = [ warehouseId ];
+                }
+                updateWarehouseQuery += ' WHERE id = $2';
+                updateWarehouseValues.push(warehouseId);
+                await pool.query(updateWarehouseQuery, updateWarehouseValues);
+
                 res.json({ success: true, data: rows[0] });
             }
         } catch (error) {
