@@ -57,6 +57,7 @@ app.get('/dealHistory', dealHistoryController.default.getAllDealHistory);
 // Маршрут для контрактов поставок
 app.get('/supplyContracts', supplyContractsController.default.getAllSupplyContracts);
 app.post('/supplyContracts', supplyContractsController.default.createSupplyContract);
+app.post('/supplyContracts/:id', supplyContractsController.default.completeContract);
 // Маршрут для финансовой статистики
 app.get('/financial', financialSituationController.default.getAllFinancialSituation);
 // Маршрут для складов

@@ -108,6 +108,52 @@ const SupplyContractsController = {
             res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     },
+    /**
+     * Завершает контракт и обновляет количество товаров.
+     *
+     * @param {Object} req - объект запроса
+     * @param {Object} res - объект ответа
+     * @return {Object} - результат обновления контракта
+     */
+    completeContract: async (req, res) => {
+        const contractId = req.params.id;
+
+        try {
+            // Получаем информацию о контракте
+            const getContractQuery = 'SELECT * FROM Supply_Contracts WHERE id = $1';
+            const { rows: contractRows } = await pool.query(getContractQuery, [contractId]);
+
+            if (contractRows.length === 0) {
+                return res.status(404).json({ success: false, error: 'Контракт не найден.' });
+            }
+
+            // Проверяем, был ли контракт уже завершен
+            if (contractRows[0].disable) {
+                return res.status(400).json({ success: false, error: 'Контракт уже завершен.' });
+            }
+
+            // Обновляем количество товаров
+            const productsSales = contractRows[0].products_sales;
+
+            for (const product of productsSales) {
+                const { id, quantity } = product;
+
+                const updateProductQuery = 'UPDATE products SET quantity = quantity - $1, reserved_quantity = reserved_quantity - $1 WHERE id = $2';
+                const updateProductValues = [quantity, id];
+                await pool.query(updateProductQuery, updateProductValues);
+            }
+
+            // Обновляем статус контракта и переводим его в "Выполнен"
+            const updateContractQuery = 'UPDATE Supply_Contracts SET disable = true, contract_status = $2 WHERE id = $1 RETURNING *';
+            const updateContractValues = [contractId, 'Выполнен'];
+            await pool.query(updateContractQuery, updateContractValues);
+
+            res.status(200).json({ success: true, message: `Контракт с id ${contractId} завершен успешно.` });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+        }
+    }
 };
 
 export default SupplyContractsController;
