@@ -58,7 +58,8 @@ const ProductsController = {
             quantity,
             occupied_space,
             price,
-            imgUrl
+            imgUrl,
+            production_cost
         } = req.body;
 
         // Проверка валидности типа товара
@@ -110,8 +111,8 @@ const ProductsController = {
             }
 
             // Добавляем товар
-            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
-            const values = [ name, product_type, subtype, characteristicsString, false, storage_location, quantity, occupied_space, price, 0, imgUrl ];
+            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity, image_url, production_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *';
+            const values = [ name, product_type, subtype, characteristicsString, false, storage_location, quantity, occupied_space, price, 0, imgUrl, production_cost ];
             const { rows } = await pool.query(query, values);
 
             // Увеличиваем занимаемое место на складе на соответствующее количество
@@ -195,7 +196,7 @@ const ProductsController = {
      */
     updateProduct: async (req, res) => {
         const productId = req.params.id;
-        const { name, product_type, subtype, characteristics, storage_location, quantity, imgUrl } = req.body;
+        const { name, product_type, subtype, characteristics, storage_location, quantity, imgUrl, production_cost } = req.body;
 
         // Проверка валидности типа товара
         if (!isValidProductType(product_type)) {
@@ -250,8 +251,8 @@ const ProductsController = {
             }
 
             // Обновляем товар
-            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7, image_url = $8 WHERE id = $5 RETURNING *';
-            const values = [ name, product_type, subtype, characteristicsString, productId, warehouseId, quantity, imgUrl ];
+            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7, image_url = $8, production_cost = $9 WHERE id = $5 RETURNING *';
+            const values = [ name, product_type, subtype, characteristicsString, productId, warehouseId, quantity, imgUrl, production_cost ];
             const { rows } = await pool.query(query, values);
 
             if (rows.length === 0) {
