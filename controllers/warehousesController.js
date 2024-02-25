@@ -25,12 +25,19 @@ const WarehousesController = {
      * @return {Object} данные созданного склада
      */
     createWarehouse: async (req, res) => {
-        const { name, address, currentCapacity, capacity } = req.body;
+        const { name, address, currentCapacity, capacity, type } = req.body;
+
+        // Проверка валидности типа склада
+        const validWarehouseTypes = ['Обычный', 'Ангар для техники', 'Авиационный ангар'];
+        if (!validWarehouseTypes.includes(type)) {
+            return res.status(400).json({ success: false, error: 'Недопустимый тип склада.' });
+        }
 
         try {
-            const query = 'INSERT INTO Warehouses (Name, Address, Current_Capacity, Capacity, disable) VALUES ($1, $2, $3, $4, $5) RETURNING *';
-            const values = [name, address, currentCapacity, capacity, false];
+            const query = 'INSERT INTO Warehouses (Name, Address, Current_Capacity, Capacity, Warehouse_type, disable) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
+            const values = [name, address, currentCapacity, capacity, type, false];
             const { rows } = await pool.query(query, values);
+
             res.status(201).json({ success: true, data: rows[0] });
         } catch (err) {
             console.error('Ошибка запроса:', err);
@@ -63,6 +70,7 @@ const WarehousesController = {
             const updateQuery = 'UPDATE Warehouses SET disable = true WHERE ID = $1 RETURNING *';
             const updateValues = [id];
             const { rows } = await pool.query(updateQuery, updateValues);
+
             if (rows.length === 0) {
                 res.status(404).json({ success: false, error: 'Склад с указанным ID не найден.' });
             } else {
