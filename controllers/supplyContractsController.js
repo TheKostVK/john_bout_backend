@@ -169,8 +169,8 @@ const SupplyContractsController = {
 
             // Вставляем данные контракта в таблицу deal_history
             const insertDealQuery = `
-            INSERT INTO deal_history (deal_date, deal_description, deal_amount, deal_type, disable, product_sales, currency, deal_status, customer_id)
-            SELECT contract_date, description, contract_amount, contract_type, false, products_sales, currency, 'Выполнен', customer_id
+            INSERT INTO deal_history (deal_date, deal_description, deal_amount, deal_type, disable, product_sales, currency, deal_status, customer_id, production_cost)
+            SELECT contract_date, description, contract_amount, contract_type, false, products_sales, currency, 'Выполнен', customer_id, production_cost
             FROM Supply_Contracts WHERE id = $1;
         `;
             await pool.query(insertDealQuery, [ contractId ]);
