@@ -8,7 +8,7 @@ const OrdersController = {
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     },
     getAllOrderItems: async (req, res) => {
@@ -17,7 +17,7 @@ const OrdersController = {
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     }
 };

@@ -1,4 +1,5 @@
 import { pool } from "../server.js";
+import * as url from "url";
 
 // Проверка соответствия типа товара ограничениям
 const isValidProductType = (productType) => {
@@ -37,7 +38,7 @@ const ProductsController = {
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -56,7 +57,8 @@ const ProductsController = {
             storage_location,
             quantity,
             occupied_space,
-            price
+            price,
+            imgUrl
         } = req.body;
 
         // Проверка валидности типа товара
@@ -105,8 +107,8 @@ const ProductsController = {
             }
 
             // Добавляем товар
-            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *';
-            const values = [ name, product_type, subtype, characteristics, false, storage_location, quantity, occupied_space, price, 0 ];
+            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
+            const values = [ name, product_type, subtype, characteristics, false, storage_location, quantity, occupied_space, price, 0, imgUrl ];
             const { rows } = await pool.query(query, values);
 
             // Увеличиваем занимаемое место на складе на соответствующее количество
@@ -117,7 +119,7 @@ const ProductsController = {
             res.status(201).json({ success: true, data: rows[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -178,7 +180,7 @@ const ProductsController = {
             res.json({ success: true, message: `Товар с id ${ productId } успешно отключен.` });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -190,7 +192,7 @@ const ProductsController = {
      */
     updateProduct: async (req, res) => {
         const productId = req.params.id;
-        const { name, product_type, subtype, characteristics, storage_location, quantity } = req.body;
+        const { name, product_type, subtype, characteristics, storage_location, quantity, imgUrl } = req.body;
 
         // Проверка валидности типа товара
         if (!isValidProductType(product_type)) {
@@ -235,8 +237,8 @@ const ProductsController = {
             }
 
             // Обновляем товар
-            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7 WHERE id = $5 RETURNING *';
-            const values = [ name, product_type, subtype, characteristics, productId, warehouseId, quantity ];
+            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7, image_url = $8 WHERE id = $5 RETURNING *';
+            const values = [ name, product_type, subtype, characteristics, productId, warehouseId, quantity, imgUrl ];
             const { rows } = await pool.query(query, values);
 
             if (rows.length === 0) {
@@ -245,6 +247,7 @@ const ProductsController = {
                 // Обновляем количество товара на складе
                 let updateWarehouseQuery = 'UPDATE Warehouses SET current_capacity = current_capacity ';
                 let updateWarehouseValues;
+
                 if (updatedQuantity > 0) {
                     updateWarehouseQuery += '+ $1';
                     updateWarehouseValues = [ updatedQuantity * occupiedSpace ];
@@ -252,10 +255,9 @@ const ProductsController = {
                     updateWarehouseQuery += '- $1';
                     updateWarehouseValues = [ -updatedQuantity * occupiedSpace ];
                 } else {
-                    // Нет изменений в количестве товара
-                    updateWarehouseQuery += 'WHERE id = $2';
-                    updateWarehouseValues = [ warehouseId ];
+                    return res.json({ success: true, data: rows[0] });
                 }
+
                 updateWarehouseQuery += ' WHERE id = $2';
                 updateWarehouseValues.push(warehouseId);
                 await pool.query(updateWarehouseQuery, updateWarehouseValues);
@@ -264,7 +266,7 @@ const ProductsController = {
             }
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500:' });
+            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
         }
     },
 };

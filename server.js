@@ -64,7 +64,7 @@ app.post('/warehouses', warehousesController.default.createWarehouse);
 app.delete('/warehouses/:id', warehousesController.default.disableWarehouse);
 
 // Порт, на котором будет запущен сервер
-const port = 3000;
+const port = 5000;
 
 // Запуск сервера
 app.listen(port, () => {
