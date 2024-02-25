@@ -22,7 +22,27 @@ export const pool = new Pool({
     port: 5432,
 });
 
+// Обработчик события завершения процесса
+process.on('SIGINT', () => {
+    pool.end().then(() => {
+        console.log('Пул соединений закрыт');
+        process.exit(0);
+    });
+});
+
+// Middleware для обработки данных в формате JSON
+app.use(express.json());
+// Middleware для обработки данных из формы
+app.use(express.urlencoded({ extended: true }));
+// Middleware для логирования запросов
+app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} запрос на ${req.originalUrl}`);
+    next();
+});
+
 // Маршруты для заказчиков
+app.use('/customers/create', customersController.default.createCustomer);
+app.delete('/customers/:id', customersController.default.deleteCustomer);
 app.use('/customers', customersController.default.getAllCustomers);
 // Маршрут для продуктов
 app.get('/products', productsController.default.getAllProducts);
