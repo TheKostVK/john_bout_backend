@@ -3,7 +3,6 @@ import pkg from 'pg';
 import {
     customersController,
     productsController,
-    ordersController,
     dealHistoryController,
     supplyContractsController,
     financialSituationController,
@@ -49,9 +48,6 @@ app.get('/products', productsController.default.getAllProducts);
 app.post('/products', productsController.default.addProduct);
 app.put('/products/:id', productsController.default.updateProduct);
 app.delete('/products/:id', productsController.default.disableProduct);
-// Маршрут для заказов
-app.get('/orders', ordersController.default.getAllOrders);
-app.get('/orders/items', ordersController.default.getAllOrderItems);
 // Маршрут для истории сделок
 app.get('/dealHistory', dealHistoryController.default.getAllDealHistory);
 // Маршрут для контрактов поставок
