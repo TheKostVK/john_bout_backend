@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import pkg from 'pg';
 import {
     customersController,
@@ -29,6 +30,9 @@ process.on('SIGINT', () => {
     });
 });
 
+// Используем middleware cors
+app.use(cors());
+
 // Middleware для обработки данных в формате JSON
 app.use(express.json());
 // Middleware для обработки данных из формы
@@ -55,7 +59,7 @@ app.get('/supplyContracts', supplyContractsController.default.getAllSupplyContra
 app.post('/supplyContracts/status/:id', supplyContractsController.default.changeContractStatus);
 app.post('/supplyContracts/:id', supplyContractsController.default.completeContract);
 app.post('/supplyContracts', supplyContractsController.default.createSupplyContract);
-// Маршрут для финансовой статистики
+// Маршрут для финансовой статистики
 app.get('/financial', financialSituationController.default.getAllFinancialSituation);
 // Маршрут для складов
 app.get('/warehouses', warehousesController.default.getAllWarehouses);

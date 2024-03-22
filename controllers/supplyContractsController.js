@@ -171,13 +171,14 @@ const SupplyContractsController = {
             const insertDealQuery = `
             INSERT INTO deal_history (deal_date, deal_description, deal_amount, deal_type, disable, product_sales, currency, deal_status, customer_id, production_cost)
             SELECT contract_date, description, contract_amount, contract_type, false, products_sales, currency, 'Выполнен', customer_id, production_cost
-            FROM Supply_Contracts WHERE id = $1
-        `;
+            FROM Supply_Contracts WHERE id = $1`;
+
             await pool.query(insertDealQuery, [ contractId ]);
 
             // Обновляем статус контракта и переводим его в "Выполнен"
             const updateContractQuery = 'UPDATE Supply_Contracts SET disable = true, contract_status = $2 WHERE id = $1 RETURNING *';
             const updateContractValues = [ contractId, 'Выполнен' ];
+
             await pool.query(updateContractQuery, updateContractValues);
 
             // Получаем текущий баланс из последней записи в таблице financial_situation
@@ -185,8 +186,8 @@ const SupplyContractsController = {
             SELECT COALESCE(current_balance, 0) 
             FROM financial_situation 
             ORDER BY report_date DESC 
-            LIMIT 1
-        `;
+            LIMIT 1`;
+
             const { rows: balanceRows } = await pool.query(getBalanceQuery);
 
             const currentBalance = balanceRows.length > 0 ? balanceRows[0].current_balance : 0;
@@ -198,10 +199,11 @@ const SupplyContractsController = {
             // Вставляем новую запись в таблицу financial_situation
             const insertFinancialSituationQuery = `
             INSERT INTO financial_situation (report_date, income, expenditure, profit, current_balance)
-            VALUES ($1, $2, $3, $4, $5)
-        `;
+            VALUES ($1, $2, $3, $4, $5)`;
+
             const currentDate = new Date().toISOString().split('T')[0]; // Получаем текущую дату в формате YYYY-MM-DD
             const insertFinancialSituationValues = [currentDate, contractRows[0].contract_amount, contractRows[0].production_cost, profit, newBalance];
+
             await pool.query(insertFinancialSituationQuery, insertFinancialSituationValues);
 
             res.status(200).json({ success: true, message: `Контракт с id ${ contractId } завершен успешно.` });
