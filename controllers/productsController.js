@@ -8,7 +8,7 @@ const isValidProductType = (productType) => {
 };
 
 // Проверка соответствия подтипа товара ограничениям
-const isValidProductSubtype = (productType, subtype) => {
+const isValidProductSubtype = (productType, product_subtype) => {
     switch (productType) {
         case 'Военные самолеты':
             return [
@@ -24,7 +24,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 'Учебно-тренировочные самолеты',
                 'Танкеры (для воздушной дозаправки)',
                 'Эвакуационные самолеты'
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Тяжелая техника':
             return [
                 "Ракетные комплексы",
@@ -37,7 +37,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Тяжелые минометы",
                 "Разведывательные машины",
                 "Инженерная техника"
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Оружие':
             return [
                 "Тактические винтовки",
@@ -46,7 +46,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Пистолеты",
                 "Ручные пулеметы",
                 "Снайперские и пехотные винтовки"
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Амуниция':
             return [
                 "Бронежилеты стандартного уровня защиты",
@@ -75,7 +75,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Гранаты реактивные",
                 "Гранаты ударные",
                 "Гранаты газовые",
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Боеприпасы различного калибра':
             return [
                 "Патроны калибра 5,45 мм",
@@ -89,7 +89,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Снаряды калибра 203 мм",
                 "Снаряды калибра 240 мм",
                 "Снаряды калибра 300 мм"
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Ракеты класса воздух-земля':
             return [
                 "Управляемые авиационные бомбы",
@@ -100,7 +100,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Ракеты с лазерным наведением",
                 "Ракеты с ТВ наведением",
                 "Ракеты с инерциальным наведением"
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Ракеты класса воздух-воздух':
             return [
                 "Ближнего радиуса действия с ИК наведением",
@@ -111,7 +111,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Ракеты с полуактивной радиолокационной головкой",
                 "Ракеты с тепловой головкой",
                 "Ракеты с радиоволновой головкой"
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Ракеты класса земля-воздух':
             return [
                 "Зенитные ракетные комплексы с головками самонаведения по радиолокационной разведке (ГСН)",
@@ -120,7 +120,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Зенитные ракетные комплексы с лазерными головками самонаведения",
                 "Переносные зенитные ракетные комплексы с радиолокационным наведением",
                 "Стрелково-пушечные зенитные комплексы с головками самонаведения по радару"
-            ].includes(subtype);
+            ].includes(product_subtype);
         case 'Межконтинентальные ракеты':
             return [
                 "Баллистические ракеты с одной боеголовкой",
@@ -132,7 +132,7 @@ const isValidProductSubtype = (productType, subtype) => {
                 "Баллистические ракеты с гиперзвуковыми боеголовками",
                 "Межконтинентальные ракеты-носители космических аппаратов",
                 "Баллистические ракеты с разделяющимися блоками"
-            ].includes(subtype);
+            ].includes(product_subtype);
         default:
             return true; // Подтип не определен или не ограничен для других типов товаров
     }
@@ -167,14 +167,15 @@ const ProductsController = {
         const {
             name,
             product_type,
-            subtype,
+            product_subtype,
             characteristics,
             storage_location,
             quantity,
             occupied_space,
             price,
             imgUrl,
-            production_cost
+            production_cost,
+            product_description
         } = req.body;
 
         // Проверка валидности типа товара
@@ -183,7 +184,7 @@ const ProductsController = {
         }
 
         // Проверка валидности подтипа товара
-        if (!isValidProductSubtype(product_type, subtype)) {
+        if (!isValidProductSubtype(product_type, product_subtype)) {
             return res.status(400).json({ success: false, error: 'Недопустимый подтип товара.' });
         }
 
@@ -226,8 +227,8 @@ const ProductsController = {
             }
 
             // Добавляем товар
-            const query = 'INSERT INTO products (name, product_type, subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity, image_url, production_cost) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *';
-            const values = [ name, product_type, subtype, characteristicsString, false, storage_location, quantity, occupied_space, price, 0, imgUrl, production_cost ];
+            const query = 'INSERT INTO products (name, product_type, product_subtype, characteristics, disable, storage_location, quantity, occupied_space, price, reserved_quantity, image_url, production_cost, product_description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *';
+            const values = [ name, product_type, product_subtype, characteristicsString, false, storage_location, quantity, occupied_space, price, 0, imgUrl, production_cost, product_description ];
             const { rows } = await pool.query(query, values);
 
             // Увеличиваем занимаемое место на складе на соответствующее количество
@@ -314,12 +315,13 @@ const ProductsController = {
         const {
             name,
             product_type,
-            subtype,
+            product_subtype,
             characteristics,
             storage_location,
             quantity,
             imgUrl,
-            production_cost
+            production_cost,
+            product_description
         } = req.body;
 
         // Проверка валидности типа товара
@@ -328,7 +330,7 @@ const ProductsController = {
         }
 
         // Проверка валидности подтипа товара
-        if (!isValidProductSubtype(product_type, subtype)) {
+        if (!isValidProductSubtype(product_type, product_subtype)) {
             return res.status(400).json({ success: false, error: 'Недопустимый подтип товара.' });
         }
 
@@ -375,8 +377,8 @@ const ProductsController = {
             }
 
             // Обновляем товар
-            const query = 'UPDATE products SET name = $1, product_type = $2, subtype = $3, characteristics = $4, storage_location = $6, quantity = $7, image_url = $8, production_cost = $9 WHERE id = $5 RETURNING *';
-            const values = [ name, product_type, subtype, characteristicsString, productId, warehouseId, quantity, imgUrl, production_cost ];
+            const query = 'UPDATE products SET name = $1, product_type = $2, product_subtype = $3, characteristics = $4, storage_location = $6, quantity = $7, image_url = $8, production_cost = $9, product_description = $10 WHERE id = $5 RETURNING *';
+            const values = [ name, product_type, product_subtype, characteristicsString, productId, warehouseId, quantity, imgUrl, production_cost, product_description ];
             const { rows } = await pool.query(query, values);
 
             if (rows.length === 0) {
