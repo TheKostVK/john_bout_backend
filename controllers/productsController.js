@@ -153,7 +153,7 @@ const ProductsController = {
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -239,7 +239,7 @@ const ProductsController = {
             res.status(201).json({ success: true, data: rows[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -300,7 +300,7 @@ const ProductsController = {
             res.json({ success: true, message: `Товар с id ${ productId } успешно отключен.` });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -406,7 +406,7 @@ const ProductsController = {
             }
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
 };

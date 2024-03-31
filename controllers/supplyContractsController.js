@@ -14,7 +14,7 @@ const SupplyContractsController = {
             res.status(200).json({ success: true, data: rows });
         } catch (err) {
             console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -128,7 +128,7 @@ const SupplyContractsController = {
             res.status(201).json({ success: true, data: insertedContract[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
     /**
@@ -209,7 +209,7 @@ const SupplyContractsController = {
             res.status(200).json({ success: true, message: `Контракт с id ${ contractId } завершен успешно.` });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, error: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
         }
     },
     /**

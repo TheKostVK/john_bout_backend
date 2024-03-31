@@ -32,7 +32,6 @@ process.on('SIGINT', () => {
 
 // Используем middleware cors
 app.use(cors());
-
 // Middleware для обработки данных в формате JSON
 app.use(express.json());
 // Middleware для обработки данных из формы
