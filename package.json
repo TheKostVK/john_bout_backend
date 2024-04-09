@@ -5,7 +5,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start_nodemon": "nodemon server.js"
   },
   "keywords": [],
@@ -14,9 +14,12 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "node-mocks-http": "^1.14.1",
     "pg": "^8.11.3"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-fetch-mock": "^3.0.3",
     "nodemon": "^3.1.0",
     "typescript": "^5.3.3"
   }
