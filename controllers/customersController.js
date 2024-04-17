@@ -14,9 +14,9 @@ const CustomersController = {
             const { rows } = await pool.query(query);
 
             res.status(200).json({ success: true, data: rows });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -39,9 +39,9 @@ const CustomersController = {
             const newUser = rows[0];
 
             res.status(201).json({ success: true, data: newUser });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ error: 'Ошибка сервера, код - 500:' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ message: 'Ошибка сервера, код - 500:' });
         }
     },
     /**
@@ -61,9 +61,9 @@ const CustomersController = {
             await pool.query(updateQuery, values);
 
             res.json({ success: true, message: `Пользователь с id ${customerId} успешно отключен.` });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ error: 'Ошибка сервера, код - 500:' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ message: 'Ошибка сервера, код - 500:' });
         }
     }
 };

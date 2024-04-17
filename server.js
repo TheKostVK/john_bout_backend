@@ -4,7 +4,6 @@ import pkg from 'pg';
 import {
     customersController,
     productsController,
-    dealHistoryController,
     supplyContractsController,
     financialSituationController,
     warehousesController,
@@ -51,8 +50,6 @@ app.get('/products', productsController.default.getAllProducts);
 app.post('/products', productsController.default.addProduct);
 app.put('/products/:id', productsController.default.updateProduct);
 app.delete('/products/:id', productsController.default.disableProduct);
-// Маршрут для истории сделок
-app.get('/dealHistory', dealHistoryController.default.getAllDealHistory);
 // Маршрут для контрактов поставок
 app.get('/supplyContracts', supplyContractsController.default.getAllSupplyContracts);
 app.post('/supplyContracts/status/:id', supplyContractsController.default.changeContractStatus);

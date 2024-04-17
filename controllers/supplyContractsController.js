@@ -10,11 +10,11 @@ const SupplyContractsController = {
      */
     getAllSupplyContracts: async (req, res) => {
         try {
-            const { rows } = await pool.query('SELECT * FROM Supply_Contracts WHERE disable = false');
+            const { rows } = await pool.query('SELECT * FROM Supply_Contracts');
             res.status(200).json({ success: true, data: rows });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -49,7 +49,7 @@ const SupplyContractsController = {
 
                 if (rows.length === 0) return res.status(404).json({
                     success: false,
-                    error: `Товар с id ${ id } не найден.`
+                    message: `Товар с id ${ id } не найден.`
                 });
 
 
@@ -57,7 +57,7 @@ const SupplyContractsController = {
 
                 if (quantity > availableQuantity) return res.status(400).json({
                     success: false,
-                    error: `Недостаточное количество товара с id ${ id } на складе.`
+                    message: `Недостаточное количество товара с id ${ id } на складе.`
                 });
 
                 // Умножаем стоимость производства одного товара на количество товаров в контракте
@@ -68,12 +68,12 @@ const SupplyContractsController = {
             if (contract_amount < totalProductionCost) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Сумма контракта меньше общей стоимости производства.'
+                    message: 'Сумма контракта меньше общей стоимости производства.'
                 });
             } else if (totalProductionCost < 0) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Общая стоимость производства меньше нуля.'
+                    message: 'Общая стоимость производства меньше нуля.'
                 });
             }
 
@@ -128,7 +128,7 @@ const SupplyContractsController = {
             res.status(201).json({ success: true, data: insertedContract[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -148,13 +148,13 @@ const SupplyContractsController = {
 
             if (contractRows.length === 0) return res.status(404).json({
                 success: false,
-                error: 'Контракт не найден.'
+                message: 'Контракт не найден.'
             });
 
             // Проверяем, был ли контракт уже завершен
             if (contractRows[0].disable) return res.status(400).json({
                 success: false,
-                error: 'Контракт уже завершен.'
+                message: 'Контракт уже завершен.'
             });
 
             // Обновляем количество товаров
@@ -166,14 +166,6 @@ const SupplyContractsController = {
                 const updateProductValues = [ quantity, id ];
                 await pool.query(updateProductQuery, updateProductValues);
             }
-
-            // Вставляем данные контракта в таблицу deal_history
-            const insertDealQuery = `
-            INSERT INTO deal_history (deal_date, deal_description, deal_amount, deal_type, disable, product_sales, currency, deal_status, customer_id, production_cost)
-            SELECT contract_date, description, contract_amount, contract_type, false, products_sales, currency, 'Выполнен', customer_id, production_cost
-            FROM Supply_Contracts WHERE id = $1`;
-
-            await pool.query(insertDealQuery, [ contractId ]);
 
             // Обновляем статус контракта и переводим его в "Выполнен"
             const updateContractQuery = 'UPDATE Supply_Contracts SET disable = true, contract_status = $2 WHERE id = $1 RETURNING *';
@@ -198,18 +190,18 @@ const SupplyContractsController = {
 
             // Вставляем новую запись в таблицу financial_situation
             const insertFinancialSituationQuery = `
-            INSERT INTO financial_situation (report_date, income, expenditure, profit, current_balance)
-            VALUES ($1, $2, $3, $4, $5)`;
+            INSERT INTO financial_situation (report_date, disable, income, expenditure, profit, current_balance)
+            VALUES ($1, $2, $3, $4, $5, $6)`;
 
             const currentDate = new Date().toISOString().split('T')[0]; // Получаем текущую дату в формате YYYY-MM-DD
-            const insertFinancialSituationValues = [currentDate, contractRows[0].contract_amount, contractRows[0].production_cost, profit, newBalance];
+            const insertFinancialSituationValues = [ currentDate, false, contractRows[0].contract_amount, contractRows[0].production_cost, profit, newBalance ];
 
             await pool.query(insertFinancialSituationQuery, insertFinancialSituationValues);
 
             res.status(200).json({ success: true, message: `Контракт с id ${ contractId } завершен успешно.` });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -229,7 +221,7 @@ const SupplyContractsController = {
             if (!newStatus || !allowedStatuses.includes(newStatus)) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Не указан новый допустимый статус контракта.'
+                    message: 'Не указан новый допустимый статус контракта.'
                 });
             }
 
@@ -257,7 +249,7 @@ const SupplyContractsController = {
             if (rows.length === 0) {
                 return res.status(404).json({
                     success: false,
-                    error: 'Контракт не найден.'
+                    message: 'Контракт не найден.'
                 });
             }
 
@@ -269,7 +261,7 @@ const SupplyContractsController = {
             console.error('Ошибка запроса:', error);
             res.status(500).json({
                 success: false,
-                error: 'Ошибка сервера, код - 500'
+                message: 'Ошибка сервера, код - 500'
             });
         }
     }

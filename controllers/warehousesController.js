@@ -12,9 +12,9 @@ const WarehousesController = {
         try {
             const { rows } = await pool.query('SELECT * FROM Warehouses WHERE disable = false');
             res.status(200).json({ success: true, data: rows });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -31,7 +31,7 @@ const WarehousesController = {
         const validWarehouseTypes = ['Обычный', 'Ангар для техники', 'Авиационный ангар'];
 
         if (!validWarehouseTypes.includes(type)) {
-            return res.status(400).json({ success: false, error: 'Недопустимый тип склада.' });
+            return res.status(400).json({ success: false, message: 'Недопустимый тип склада.' });
         }
 
         try {
@@ -40,9 +40,9 @@ const WarehousesController = {
             const { rows } = await pool.query(query, values);
 
             res.status(201).json({ success: true, data: rows[0] });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -63,7 +63,7 @@ const WarehousesController = {
 
             // Если на складе есть товары, отправляем сообщение об ошибке
             if (productCount[0].count > 0) {
-                res.status(400).json({ success: false, error: 'Невозможно отключить склад, так как на нем есть товары.' });
+                res.status(400).json({ success: false, message: 'Невозможно отключить склад, так как на нем есть товары.' });
                 return;
             }
 
@@ -73,13 +73,13 @@ const WarehousesController = {
             const { rows } = await pool.query(updateQuery, updateValues);
 
             if (rows.length === 0) {
-                res.status(404).json({ success: false, error: 'Склад с указанным ID не найден.' });
+                res.status(404).json({ success: false, message: 'Склад с указанным ID не найден.' });
             } else {
                 res.status(200).json({ success: true, message: `Склад с ID ${id} был успешно отключен.` });
             }
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     }
 };

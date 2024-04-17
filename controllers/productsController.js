@@ -151,9 +151,9 @@ const ProductsController = {
             const { rows } = await pool.query('SELECT * FROM products WHERE disable = false');
 
             res.status(200).json({ success: true, data: rows });
-        } catch (err) {
-            console.error('Ошибка запроса:', err);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -180,12 +180,12 @@ const ProductsController = {
 
         // Проверка валидности типа товара
         if (!isValidProductType(product_type)) {
-            return res.status(400).json({ success: false, error: 'Недопустимый тип товара.' });
+            return res.status(400).json({ success: false, message: 'Недопустимый тип товара.' });
         }
 
         // Проверка валидности подтипа товара
         if (!isValidProductSubtype(product_type, product_subtype)) {
-            return res.status(400).json({ success: false, error: 'Недопустимый подтип товара.' });
+            return res.status(400).json({ success: false, message: 'Недопустимый подтип товара.' });
         }
 
         try {
@@ -199,31 +199,31 @@ const ProductsController = {
 
             // Если склад не найден, возвращаем ошибку
             if (warehouseRows.length === 0) {
-                return res.status(404).json({ success: false, error: 'Склад не найден.' });
+                return res.status(404).json({ success: false, message: 'Склад не найден.' });
             }
 
             // Проверяем соответствие типа товара и типа склада
             if (product_type === 'Военные самолеты' && warehouseRows[0].warehouse_type !== 'Авиационный ангар') {
                 return res.status(400).json({
                     success: false,
-                    error: 'Военные самолеты должны храниться в авиационном ангаре.'
+                    message: 'Военные самолеты должны храниться в авиационном ангаре.'
                 });
             } else if (product_type === 'Тяжелая техника' && warehouseRows[0].warehouse_type !== 'Ангар для техники') {
                 return res.status(400).json({
                     success: false,
-                    error: 'Тяжелая техника должна храниться в ангаре для техники.'
+                    message: 'Тяжелая техника должна храниться в ангаре для техники.'
                 });
             } else if ((product_type === 'Оружие' || product_type === 'Амуниция') && warehouseRows[0].warehouse_type !== 'Обычный') {
                 return res.status(400).json({
                     success: false,
-                    error: 'Оружие и амуниция должны храниться на обычном складе.'
+                    message: 'Оружие и амуниция должны храниться на обычном складе.'
                 });
             }
 
             // Проверяем, есть ли достаточно свободного места на складе
             const totalOccupiedSpace = occupied_space * quantity;
             if (totalOccupiedSpace > (warehouseRows[0].capacity - warehouseRows[0].current_capacity)) {
-                return res.status(400).json({ success: false, error: 'Недостаточно свободного места на складе.' });
+                return res.status(400).json({ success: false, message: 'Недостаточно свободного места на складе.' });
             }
 
             // Добавляем товар
@@ -239,7 +239,7 @@ const ProductsController = {
             res.status(201).json({ success: true, data: rows[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -259,11 +259,11 @@ const ProductsController = {
             const { rows: productRows } = await pool.query(getProductQuery, getProductValues);
 
             if (productRows.length === 0) {
-                return res.status(404).json({ success: false, error: 'Товар не найден.' });
+                return res.status(404).json({ success: false, message: 'Товар не найден.' });
             } else if (productRows[0].reserved_quantity > 0) {
                 return res.status(400).json({
                     success: false,
-                    error: `Товар зарезервирован в количестве ${ productRows[0].reserved_quantity }.`
+                    message: `Товар зарезервирован в количестве ${ productRows[0].reserved_quantity }.`
                 });
             }
 
@@ -274,7 +274,7 @@ const ProductsController = {
             const { rows: warehouseRows } = await pool.query(getWarehouseQuery, getWarehouseValues);
 
             if (warehouseRows.length === 0) {
-                return res.status(404).json({ success: false, error: 'Склад не найден.' });
+                return res.status(404).json({ success: false, message: 'Склад не найден.' });
             }
 
             // Вычисляем количество мест, которые занимает товар на складе
@@ -284,7 +284,7 @@ const ProductsController = {
 
             // Проверяем, не превышает ли текущая емкость склада вычитаемое значение
             if (warehouseRows[0].current_capacity < totalOccupiedSpace) {
-                return res.status(400).json({ success: false, error: 'Недостаточно товара на складе для отключения.' });
+                return res.status(400).json({ success: false, message: 'Недостаточно товара на складе для отключения.' });
             }
 
             // Уменьшаем текущее количество товара на складе на количество мест, которые он занимает
@@ -300,7 +300,7 @@ const ProductsController = {
             res.json({ success: true, message: `Товар с id ${ productId } успешно отключен.` });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
     /**
@@ -326,12 +326,12 @@ const ProductsController = {
 
         // Проверка валидности типа товара
         if (!isValidProductType(product_type)) {
-            return res.status(400).json({ success: false, error: 'Недопустимый тип товара.' });
+            return res.status(400).json({ success: false, message: 'Недопустимый тип товара.' });
         }
 
         // Проверка валидности подтипа товара
         if (!isValidProductSubtype(product_type, product_subtype)) {
-            return res.status(400).json({ success: false, error: 'Недопустимый подтип товара.' });
+            return res.status(400).json({ success: false, message: 'Недопустимый подтип товара.' });
         }
 
         try {
@@ -344,7 +344,7 @@ const ProductsController = {
             const { rows: productRows } = await pool.query(getProductQuery, getProductValues);
 
             if (productRows.length === 0) {
-                return res.status(404).json({ success: false, error: 'Товар не найден.' });
+                return res.status(404).json({ success: false, message: 'Товар не найден.' });
             }
 
             // Получаем информацию о складе, к которому относится товар
@@ -354,7 +354,7 @@ const ProductsController = {
             const { rows: warehouseRows } = await pool.query(getWarehouseQuery, getWarehouseValues);
 
             if (warehouseRows.length === 0) {
-                return res.status(404).json({ success: false, error: 'Склад не найден.' });
+                return res.status(404).json({ success: false, message: 'Склад не найден.' });
             }
 
             // Вычисляем изменение количества товара на складе
@@ -368,12 +368,12 @@ const ProductsController = {
             if (quantity < productRows[0].reserved_quantity) {
                 return res.status(400).json({
                     success: false,
-                    error: `Количество товара меньше необходимого для резервирования. Текущий резерв: ${ productRows[0].reserved_quantity }`,
+                    message: `Количество товара меньше необходимого для резервирования. Текущий резерв: ${ productRows[0].reserved_quantity }`,
                 });
             }
 
             if (((warehouseRows[0].current_capacity - (productRows[0].quantity * productRows[0].occupied_space)) + totalOccupiedSpace) > warehouseRows[0].capacity) {
-                return res.status(400).json({ success: false, error: 'Недостаточно свободного места на складе.' });
+                return res.status(400).json({ success: false, message: 'Недостаточно свободного места на складе.' });
             }
 
             // Обновляем товар
@@ -382,7 +382,7 @@ const ProductsController = {
             const { rows } = await pool.query(query, values);
 
             if (rows.length === 0) {
-                res.status(404).json({ success: false, error: 'Товар не найден.' });
+                res.status(404).json({ success: false, message: 'Товар не найден.' });
             } else {
                 // Обновляем количество товара на складе
                 let updateWarehouseQuery = 'UPDATE Warehouses SET current_capacity = current_capacity ';
@@ -406,7 +406,7 @@ const ProductsController = {
             }
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: 'Ошибка сервера, код - 500' });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
 };
