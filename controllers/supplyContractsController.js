@@ -217,7 +217,8 @@ const SupplyContractsController = {
 
         try {
             // Проверяем, что новый статус контракта указан и является допустимым
-            const allowedStatuses = [ 'В ожидании', 'В процессе производства', 'В процессе доставки', 'Выполнен', 'Отменен' ];
+            const allowedStatuses = [ 'Ожидает подтверждения', 'В процессе выполнения', 'Выполнен', 'Отменен' ];
+
             if (!newStatus || !allowedStatuses.includes(newStatus)) {
                 return res.status(400).json({
                     success: false,
@@ -259,10 +260,7 @@ const SupplyContractsController = {
             });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Ошибка сервера, код - 500'
-            });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     }
 };
