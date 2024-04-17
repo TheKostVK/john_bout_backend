@@ -175,7 +175,7 @@ const SupplyContractsController = {
 
             // Получаем текущий баланс из последней записи в таблице financial_situation
             const getBalanceQuery = `
-            SELECT COALESCE(current_balance, 0) 
+            SELECT current_balance 
             FROM financial_situation 
             ORDER BY report_date DESC 
             LIMIT 1`;
