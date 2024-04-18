@@ -6,7 +6,7 @@ import {
     productsController,
     supplyContractsController,
     financialSituationController,
-    warehousesController,
+    warehousesController, authController,
 } from './controllers/index.js';
 
 const app = express();
@@ -41,6 +41,8 @@ app.use((req, res, next) => {
     next();
 });
 
+// Маршруты для аккаунтов
+app.post('/auth/login', authController.default.login);
 // Маршруты для заказчиков
 app.get('/customers', customersController.default.getAllCustomers);
 app.post('/customers', customersController.default.createCustomer);
