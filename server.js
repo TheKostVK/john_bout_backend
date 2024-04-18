@@ -43,6 +43,7 @@ app.use((req, res, next) => {
 
 // Маршруты для аккаунтов
 app.post('/auth/login', authController.default.login);
+app.post('/auth/loginORM', authController.default.loginORM);
 // Маршруты для заказчиков
 app.get('/customers', customersController.default.getAllCustomers);
 app.post('/customers', customersController.default.createCustomer);
