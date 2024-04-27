@@ -19,7 +19,7 @@ const { getAllCustomers } = {
             res.status(200).json({ success: true, data: rows });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера, код - 500` });
         }
     }
 };
