@@ -21,6 +21,8 @@ const User = sequelize.define('users', {
         type: Sequelize.STRING,
         allowNull: false,
     },
+}, {
+    timestamps: false,
 });
 
 const authController = {
@@ -61,16 +63,17 @@ const authController = {
      */
     loginORM: async (req, res) => {
         try {
-            const user = await User.findOne({ where: { username: req.body.username, password: req.body.password } });
+            const { username, password } = req.body;
+            const user = await User.findOne({ where: { username, password } });
 
             if (!user) {
-                return res.status(200).json({ success: false, data: [], message: `Не авторизован` });
+                return res.status(401).json({ success: false, message: 'Неверные учетные данные' });
             }
 
             res.status(200).json({ success: true, data: user });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
+            res.status(500).json({ success: false, message: `Ошибка сервера: ${ error.message }` });
         }
     }
 };
