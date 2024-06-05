@@ -35,23 +35,19 @@ const authController = {
      */
     login: async (req, res) => {
         try {
-            const query = 'SELECT * FROM users';
-            const { rows } = await pool.query(query);
-
-            if (!rows[0]) {
-                return res.status(200).json({ success: false, data: [], message: `Не авторизован` });
-            }
-
             const { username, password } = req.body;
+            const query = 'SELECT * FROM users WHERE username = $1 AND password = $2';
+            const values = [username, password];
+            const { rows } = await pool.query(query, values);
 
-            if (username === rows[0].username && password === rows[0].password) {
-                return res.status(200).json({ success: true, data: rows[0] });
-            } else {
-                return res.status(200).json({ success: false, data: [], message: `Не авторизован` });
+            if (rows.length === 0) {
+                return res.status(200).json({ success: false, data: [], message: 'Не авторизован' });
             }
+
+            return res.status(200).json({ success: true, data: rows[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${error.detail}` });
         }
     },
     /**
