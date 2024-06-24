@@ -44,6 +44,10 @@ app.use((req, res, next) => {
 // Маршруты для аккаунтов
 app.post('/auth/login', authController.default.login);
 app.post('/auth/loginORM', authController.default.loginORM);
+app.delete('/auth/login', authController.default.deleteUser);
+app.delete('/auth/loginORM', authController.default.deleteUserORM);
+app.post('/auth/addUserORM', authController.default.addUserORM);
+app.post('/auth/updateUserORM', authController.default.updateUserORM);
 // Маршруты для заказчиков
 app.get('/customers', customersController.default.getAllCustomers);
 app.post('/customers', customersController.default.createCustomer);

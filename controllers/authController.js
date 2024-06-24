@@ -51,6 +51,30 @@ const authController = {
         }
     },
     /**
+     * Удаляет пользователя из базы данных и отправляет результат в виде JSON-ответа.
+     *
+     * @param {Object} req - Объект запроса
+     * @param {Object} res - Объект ответа
+     * @return {Promise<void>} Промис, который разрешается, когда операция завершена
+     */
+    deleteUser: async (req, res) => {
+        try {
+            const { userId } = req.body;
+            const query = 'DELETE FROM users WHERE id = $1 RETURNING *';
+            const values = [userId];
+            const { rows } = await pool.query(query, values);
+
+            if (rows.length === 0) {
+                return res.status(404).json({ success: false, data: [], message: 'Пользователь не найден' });
+            }
+
+            return res.status(200).json({ success: true, data: rows[0], message: 'Пользователь успешно удален' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${error.detail}` });
+        }
+    },
+    /**
      * Тестовый ORM запрос на авторизацию пользователя.
      *
      * @param {Object} req - Объект запроса
@@ -71,7 +95,86 @@ const authController = {
             console.error('Ошибка запроса:', error);
             res.status(500).json({ success: false, message: `Ошибка сервера: ${ error.message }` });
         }
-    }
+    },
+
+    /**
+     * Добавляет нового пользователя в базу данных и отправляет результат в виде JSON-ответа.
+     *
+     * @param {Object} req - Объект запроса
+     * @param {Object} res - Объект ответа
+     * @return {Promise<void>} Промис, который разрешается, когда операция завершена
+     */
+    addUserORM: async (req, res) => {
+        try {
+            const { username, password } = req.body;
+
+            // Проверка, существует ли пользователь с таким же именем
+            const existingUser = await User.findOne({ where: { username } });
+            if (existingUser) {
+                return res.status(409).json({ success: false, message: 'Пользователь с таким именем уже существует' });
+            }
+
+            // Создание нового пользователя
+            const newUser = await User.create({ username, password });
+
+            res.status(201).json({ success: true, data: newUser, message: 'Пользователь успешно создан' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, message: `Ошибка сервера: ${error.message}` });
+        }
+    },
+
+    /**
+     * Обновляет данные пользователя в базе данных и отправляет результат в виде JSON-ответа.
+     *
+     * @param {Object} req - Объект запроса
+     * @param {Object} res - Объект ответа
+     * @return {Promise<void>} Промис, который разрешается, когда операция завершена
+     */
+    updateUserORM: async (req, res) => {
+        try {
+            const { userId, username, password } = req.body;
+            const user = await User.findByPk(userId);
+
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Пользователь не найден' });
+            }
+
+            user.username = username;
+            user.password = password;
+            await user.save();
+
+            res.status(200).json({ success: true, data: user, message: 'Данные пользователя успешно обновлены' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, message: `Ошибка сервера: ${error.message}` });
+        }
+    },
+
+    /**
+     * Удаляет пользователя из базы данных и отправляет результат в виде JSON-ответа.
+     *
+     * @param {Object} req - Объект запроса
+     * @param {Object} res - Объект ответа
+     * @return {Promise<void>} Промис, который разрешается, когда операция завершена
+     */
+    deleteUserORM: async (req, res) => {
+        try {
+            const { userId } = req.body;
+            const user = await User.findByPk(userId);
+
+            if (!user) {
+                return res.status(404).json({ success: false, message: 'Пользователь не найден' });
+            }
+
+            await user.destroy();
+
+            res.status(200).json({ success: true, message: 'Пользователь успешно удален' });
+        } catch (error) {
+            console.error('Ошибка запроса:', error);
+            res.status(500).json({ success: false, message: `Ошибка сервера: ${error.message}` });
+        }
+    },
 };
 
 export default authController;
