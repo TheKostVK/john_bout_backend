@@ -61,7 +61,7 @@ const SupplyContractsController = {
                 });
 
                 // Умножаем стоимость производства одного товара на количество товаров в контракте
-                totalProductionCost += rows[0].production_cost * quantity;
+                totalProductionCost += Number(rows[0].production_cost) * Number(quantity);
             }
 
             // Проверка суммы контракта меньше общей стоимости производства
@@ -94,12 +94,13 @@ const SupplyContractsController = {
                     contract_status, 
                     production_cost
                 )
-                VALUES ($1, $2, false, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 RETURNING *;
             `;
             const insertContractValues = [
                 customer_id,
                 contract_date,
+                false,
                 productsSalesString,
                 description,
                 contract_amount,
@@ -164,6 +165,7 @@ const SupplyContractsController = {
                 const { id, quantity } = product;
                 const updateProductQuery = 'UPDATE products SET quantity = quantity - $1, reserved_quantity = reserved_quantity - $1 WHERE id = $2';
                 const updateProductValues = [ quantity, id ];
+
                 await pool.query(updateProductQuery, updateProductValues);
             }
 
