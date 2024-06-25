@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import pkg from 'pg';
@@ -6,7 +9,7 @@ import {
     productsController,
     supplyContractsController,
     financialSituationController,
-    warehousesController, authController,
+    warehousesController, authController, factoryController,
 } from './controllers/index.js';
 
 const app = express();
@@ -37,17 +40,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Middleware для логирования запросов
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} запрос на ${req.originalUrl}`);
+    console.log(`${ new Date().toISOString() } - ${ req.method } запрос на ${ req.originalUrl }`);
     next();
 });
 
 // Маршруты для аккаунтов
 app.post('/auth/login', authController.default.login);
-app.post('/auth/loginORM', authController.default.loginORM);
-app.delete('/auth/login', authController.default.deleteUser);
-app.delete('/auth/loginORM', authController.default.deleteUserORM);
-app.post('/auth/addUserORM', authController.default.addUserORM);
-app.post('/auth/updateUserORM', authController.default.updateUserORM);
 // Маршруты для заказчиков
 app.get('/customers', customersController.default.getAllCustomers);
 app.post('/customers', customersController.default.createCustomer);
@@ -57,6 +55,9 @@ app.get('/products', productsController.default.getAllProducts);
 app.post('/products', productsController.default.addProduct);
 app.put('/products/:id', productsController.default.updateProduct);
 app.delete('/products/:id', productsController.default.disableProduct);
+// Маршрут для производства товаров
+app.get('/produced-products', factoryController.default.getProducedProducts);
+app.post('/produced-products/', factoryController.default.createProducedProducts);
 // Маршрут для контрактов поставок
 app.get('/supplyContracts', supplyContractsController.default.getAllSupplyContracts);
 app.post('/supplyContracts/status/:id', supplyContractsController.default.changeContractStatus);
@@ -64,15 +65,13 @@ app.post('/supplyContracts/:id', supplyContractsController.default.completeContr
 app.post('/supplyContracts', supplyContractsController.default.createSupplyContract);
 // Маршрут для финансовой статистики
 app.get('/financial', financialSituationController.default.getAllFinancialSituation);
+app.post('/financial/operation', financialSituationController.default.updateBalance)
 // Маршрут для складов
 app.get('/warehouses', warehousesController.default.getAllWarehouses);
 app.post('/warehouses', warehousesController.default.createWarehouse);
 app.delete('/warehouses/:id', warehousesController.default.disableWarehouse);
 
-// Порт, на котором будет запущен сервер
-const port = 5000;
-
-// Запуск сервера
-app.listen(port, () => {
-    console.log(`Сервер запущен на http://localhost:${ port }`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
