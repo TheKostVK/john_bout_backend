@@ -1,16 +1,81 @@
 import { pool } from "../server.js";
 
 const FinancialSituationController = {
+    //TODO сделать возврат количества страниц всего и текущей страницы
     /**
-     * Получает все записи финансовой ситуации из базы данных.
+     * Получает все записи финансовой ситуации из базы данных с учетом фильтров и пагинации.
      *
      * @param {Object} req - объект запроса
-     * @param {Object} res - объект ответа
-     * @return {Promise<*>} Промис, который разрешается результатом запроса к базе данных
+     * @param {Object} req.query - Параметры запроса
+     * @param {string} [req.query.report_date] - Дата отчета (необязательный)
+     * @param {boolean} [req.query.disable] - Статус отключения (необязательный)
+     * @param {number} [req.query.income] - Доход (необязательный)
+     * @param {number} [req.query.expenditure] - Расход (необязательный)
+     * @param {number} [req.query.profit] - Прибыль (необязательный)
+     * @param {number} [req.query.current_balance] - Текущий баланс (необязательный)
+     * @param {number} [req.query.operation_type_id] - Идентификатор типа операции (необязательный)
+     * @param {number} [req.query.page] - Номер страницы (необязательный)
+     * @param {number} [req.query.limit] - Количество объектов на странице (необязательный)
+     * @param {Object} res - Объект ответа
+     * @return {Promise<*>} - JSON-ответ со списком финансовой ситуации
      */
     getAllFinancialSituation: async (req, res) => {
+        const {
+            report_date,
+            disable,
+            income,
+            expenditure,
+            profit,
+            current_balance,
+            operation_type_id,
+            page = 1,
+            limit = 10
+        } = req.query;
+        const offset = (page - 1) * limit;
+
+        let filterConditions = 'WHERE 1=1';
+        const filterValues = [];
+
+        if (report_date) {
+            filterConditions += ' AND DATE(report_date) = $' + (filterValues.length + 1);
+            filterValues.push(report_date);
+        }
+
+        if (disable !== undefined) {
+            filterConditions += ' AND disable = $' + (filterValues.length + 1);
+            filterValues.push(disable === 'true');
+        }
+
+        if (income !== undefined) {
+            filterConditions += ' AND income >= $' + (filterValues.length + 1);
+            filterValues.push(Number(income));
+        }
+
+        if (expenditure !== undefined) {
+            filterConditions += ' AND expenditure >= $' + (filterValues.length + 1);
+            filterValues.push(Number(expenditure));
+        }
+
+        if (profit !== undefined) {
+            filterConditions += ' AND profit >= $' + (filterValues.length + 1);
+            filterValues.push(Number(profit));
+        }
+
+        if (current_balance !== undefined) {
+            filterConditions += ' AND current_balance >= $' + (filterValues.length + 1);
+            filterValues.push(Number(current_balance));
+        }
+
+        if (operation_type_id !== undefined) {
+            filterConditions += ' AND operation_type_id = $' + (filterValues.length + 1);
+            filterValues.push(Number(operation_type_id));
+        }
+
+        const query = `SELECT * FROM financial_situation ${filterConditions} LIMIT $${filterValues.length + 1} OFFSET $${filterValues.length + 2}`;
+        filterValues.push(limit, offset);
+
         try {
-            const { rows } = await pool.query('SELECT * FROM financial_situation WHERE disable = false');
+            const { rows } = await pool.query(query, filterValues);
             res.status(200).json({ success: true, data: rows });
         } catch (error) {
             console.error('Ошибка запроса:', error);
@@ -44,7 +109,7 @@ const FinancialSituationController = {
 
             // Получаем информацию о типе операции
             const operationTypeQuery = 'SELECT name FROM operation_types WHERE id = $1';
-            const { rows: operationTypeRows } = await client.query(operationTypeQuery, [ operation_type_id ]);
+            const { rows: operationTypeRows } = await client.query(operationTypeQuery, [operation_type_id]);
 
             if (operationTypeRows.length === 0) {
                 await client.query('ROLLBACK');
@@ -58,11 +123,11 @@ const FinancialSituationController = {
             let expenditure = 0;
             let profit;
 
-            if ([ 'Sale', 'Other' ].includes(operationType)) {
+            if (['Sale', 'Other'].includes(operationType)) {
                 newBalance = currentBalance + amount;
                 income = amount;
                 profit = amount;
-            } else if ([ 'Production', 'Purchase', 'Maintenance', 'Salary', 'Utilities' ].includes(operationType)) {
+            } else if (['Production', 'Purchase', 'Maintenance', 'Salary', 'Utilities'].includes(operationType)) {
                 if (amount > currentBalance) {
                     await client.query('ROLLBACK');
                     return res.status(400).json({

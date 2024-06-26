@@ -1,16 +1,112 @@
 import { pool } from "../server.js";
+import { contractStatusValue, contractTypeValue, customersCurrencyValue } from "../globalTypes.js";
 
 const SupplyContractsController = {
+    //TODO сделать возврат количества страниц всего и текущей страницы
     /**
-     * Получает все договоры поставки из базы данных.
+     * Получает все договоры поставки из базы данных с учетом фильтров и пагинации.
      *
      * @param {Object} req - объект запроса
+     * @param {Object} req.query - Параметры запроса
+     * @param {number} [req.query.customer_id] - Идентификатор заказчика (необязательный)
+     * @param {string} [req.query.contract_date] - Дата контракта (необязательный)
+     * @param {boolean} [req.query.disable] - Статус отключения (необязательный)
+     * @param {string} [req.query.produced_tokens] - Произведенные токены (необязательный)
+     * @param {string} [req.query.description] - Описание контракта (необязательный)
+     * @param {number} [req.query.contract_amount] - Сумма контракта (необязательный)
+     * @param {string} [req.query.contract_type] - Тип контракта (необязательный)
+     * @param {string} [req.query.currency] - Валюта контракта (необязательный)
+     * @param {string} [req.query.contract_status] - Статус контракта (необязательный)
+     * @param {number} [req.query.production_cost] - Стоимость производства (необязательный)
+     * @param {number} [req.query.page] - Номер страницы (необязательный)
+     * @param {number} [req.query.limit] - Количество объектов на странице (необязательный)
      * @param {Object} res - объект ответа
-     * @return {Promise<*>} Промис, который разрешается результатом запроса к базе данных
+     * @return {Promise<*>} JSON-ответ со списком договоров поставки
      */
     getAllSupplyContracts: async (req, res) => {
+        const {
+            customer_id,
+            contract_date,
+            disable,
+            produced_tokens,
+            description,
+            contract_amount,
+            contract_type,
+            currency,
+            contract_status,
+            production_cost,
+            page = 1,
+            limit = 10
+        } = req.query;
+        const offset = (page - 1) * limit;
+
+        let filterConditions = 'WHERE 1=1';
+        const filterValues = [];
+
+        if (customer_id !== undefined) {
+            filterConditions += ' AND customer_id = $' + (filterValues.length + 1);
+            filterValues.push(Number(customer_id));
+        }
+
+        if (contract_date) {
+            filterConditions += ' AND DATE(contract_date) = $' + (filterValues.length + 1);
+            filterValues.push(contract_date);
+        }
+
+        if (disable !== undefined) {
+            filterConditions += ' AND disable = $' + (filterValues.length + 1);
+            filterValues.push(disable === 'true');
+        }
+
+        if (produced_tokens) {
+            filterConditions += ' AND produced_tokens::text ILIKE $' + (filterValues.length + 1);
+            filterValues.push(`%${ produced_tokens }%`);
+        }
+
+        if (description) {
+            filterConditions += ' AND description ILIKE $' + (filterValues.length + 1);
+            filterValues.push(`%${ description }%`);
+        }
+
+        if (contract_amount !== undefined) {
+            filterConditions += ' AND contract_amount >= $' + (filterValues.length + 1);
+            filterValues.push(Number(contract_amount));
+        }
+
+        if (contract_type) {
+            if (!contractTypeValue.includes(contract_type)) {
+                return res.status(400).json({ success: false, message: 'Недопустимый тип контракта' });
+            }
+            filterConditions += ' AND contract_type = $' + (filterValues.length + 1);
+            filterValues.push(contract_type);
+        }
+
+        if (currency) {
+            if (!customersCurrencyValue.includes(currency)) {
+                return res.status(400).json({ success: false, message: 'Недопустимая валюта контракта' });
+            }
+            filterConditions += ' AND currency = $' + (filterValues.length + 1);
+            filterValues.push(currency);
+        }
+
+        if (contract_status) {
+            if (!contractStatusValue.includes(contract_status)) {
+                return res.status(400).json({ success: false, message: 'Недопустимый статус контракта' });
+            }
+            filterConditions += ' AND contract_status = $' + (filterValues.length + 1);
+            filterValues.push(contract_status);
+        }
+
+        if (production_cost !== undefined) {
+            filterConditions += ' AND production_cost >= $' + (filterValues.length + 1);
+            filterValues.push(Number(production_cost));
+        }
+
+        const query = `SELECT * FROM Supply_Contracts ${filterConditions} LIMIT $${filterValues.length + 1} OFFSET $${filterValues.length + 2}`;
+        filterValues.push(limit, offset);
+
         try {
-            const { rows } = await pool.query('SELECT * FROM Supply_Contracts');
+            const { rows } = await pool.query(query, filterValues);
             res.status(200).json({ success: true, data: rows });
         } catch (error) {
             console.error('Ошибка запроса:', error);
@@ -49,7 +145,7 @@ const SupplyContractsController = {
 
                 // Получаем информацию о произведенном товаре
                 const getProductQuery = 'SELECT jwt_token, production_cost FROM produced_objects WHERE jwt_token = $1';
-                const { rows } = await client.query(getProductQuery, [ jwt_token ]);
+                const { rows } = await client.query(getProductQuery, [jwt_token]);
 
                 if (rows.length === 0) {
                     await client.query('ROLLBACK');
@@ -122,7 +218,7 @@ const SupplyContractsController = {
                     SET contract_id = $1
                     WHERE jwt_token = $2;
                 `;
-                const updateReservationValues = [ insertedContract[0].id, jwt_token ];
+                const updateReservationValues = [insertedContract[0].id, jwt_token];
 
                 await client.query(updateReservationQuery, updateReservationValues);
             }
@@ -140,7 +236,7 @@ const SupplyContractsController = {
                 INSERT INTO financial_situation (report_date, disable, income, expenditure, profit, current_balance, operation_type_id)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
             `;
-            const insertFinancialSituationValues = [ currentDate, false, 0, totalProductionCost, -totalProductionCost, newBalance, operationTypeId ];
+            const insertFinancialSituationValues = [currentDate, false, 0, totalProductionCost, -totalProductionCost, newBalance, operationTypeId];
             await client.query(insertFinancialSituationQuery, insertFinancialSituationValues);
 
             await client.query('COMMIT');
@@ -171,7 +267,7 @@ const SupplyContractsController = {
 
             // Получаем информацию о контракте
             const getContractQuery = 'SELECT * FROM Supply_Contracts WHERE id = $1';
-            const { rows: contractRows } = await client.query(getContractQuery, [ contractId ]);
+            const { rows: contractRows } = await client.query(getContractQuery, [contractId]);
 
             if (contractRows.length === 0) {
                 await client.query('ROLLBACK');
@@ -192,7 +288,7 @@ const SupplyContractsController = {
 
             // Обновляем статус контракта и переводим его в "Выполнен"
             const updateContractQuery = 'UPDATE Supply_Contracts SET disable = true, contract_status = $2 WHERE id = $1 RETURNING *';
-            const updateContractValues = [ contractId, 'Выполнен' ];
+            const updateContractValues = [contractId, 'Выполнен'];
 
             await client.query(updateContractQuery, updateContractValues);
 
@@ -218,7 +314,7 @@ const SupplyContractsController = {
 
             const currentDate = new Date().toISOString().split('T')[0]; // Получаем текущую дату в формате YYYY-MM-DD
             const operationTypeId = 3; // ID операции "Завершение контракта" из таблицы operation_types
-            const insertFinancialSituationValues = [ currentDate, false, contractRows[0].contract_amount, contractRows[0].production_cost, profit, newBalance, operationTypeId ];
+            const insertFinancialSituationValues = [currentDate, false, contractRows[0].contract_amount, contractRows[0].production_cost, profit, newBalance, operationTypeId];
 
             await client.query(insertFinancialSituationQuery, insertFinancialSituationValues);
 
@@ -250,7 +346,7 @@ const SupplyContractsController = {
             await client.query('BEGIN');
 
             // Проверяем, что новый статус контракта указан и является допустимым
-            const allowedStatuses = [ 'Ожидает подтверждения', 'В процессе выполнения', 'Выполнен', 'Отменен' ];
+            const allowedStatuses = ['Ожидает подтверждения', 'В процессе выполнения', 'Выполнен', 'Отменен'];
 
             if (!newStatus || !allowedStatuses.includes(newStatus)) {
                 await client.query('ROLLBACK');
@@ -264,7 +360,7 @@ const SupplyContractsController = {
             if (newStatus === 'Отменен') {
                 // Получаем информацию о произведенных товарах в контракте
                 const getTokensQuery = 'SELECT produced_tokens FROM Supply_Contracts WHERE id = $1';
-                const { rows: contractRows } = await client.query(getTokensQuery, [ contractId ]);
+                const { rows: contractRows } = await client.query(getTokensQuery, [contractId]);
 
                 const producedTokens = JSON.parse(contractRows[0].produced_tokens);
 
@@ -276,7 +372,7 @@ const SupplyContractsController = {
                         SET contract_id = NULL 
                         WHERE jwt_token = $1
                     `;
-                    const updateProductValues = [ jwt_token ];
+                    const updateProductValues = [jwt_token];
 
                     await client.query(updateProductQuery, updateProductValues);
                 }
@@ -284,7 +380,7 @@ const SupplyContractsController = {
 
             // Обновляем статус контракта
             const updateContractQuery = 'UPDATE Supply_Contracts SET contract_status = $1 WHERE id = $2 RETURNING *';
-            const updateContractValues = [ newStatus, contractId ];
+            const updateContractValues = [newStatus, contractId];
             const { rows } = await client.query(updateContractQuery, updateContractValues);
 
             if (rows.length === 0) {

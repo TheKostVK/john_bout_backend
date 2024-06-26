@@ -9,8 +9,10 @@ import {
     productsController,
     supplyContractsController,
     financialSituationController,
-    warehousesController, authController, factoryController,
-} from './controllers/index.js';
+    warehousesController,
+    authController,
+    factoryController,
+} from "./controllers/index.js";
 
 const app = express();
 const { Pool } = pkg;

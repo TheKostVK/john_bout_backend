@@ -6,8 +6,8 @@
   "main": "server.js",
   "scripts": {
     "test": "jest",
-    "start": "node server.js",
-    "start_nodemon": "nodemon server.js"
+    "start": "node src/server.js",
+    "start_nodemon": "nodemon src/server.js"
   },
   "keywords": [],
   "author": "",
