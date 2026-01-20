@@ -7,8 +7,9 @@ import { isValidProductType, isValidProductSubtype } from '../utils/productValid
 dotenv.config();
 
 const FactoryController = {
+    //TODO сделать возврат количества страниц всего и текущей страницы
     /**
-     * Получение списка произведенных товаров
+     * Получение списка произведенных товаров с учетом фильтров и пагинации.
      * @param {Object} req - Объект запроса
      * @param {Object} req.query - Параметры запроса
      * @param {number} [req.query.product_id] - Идентификатор товара (необязательный)
@@ -16,43 +17,56 @@ const FactoryController = {
      * @param {number} [req.query.storage_location] - Идентификатор склада (необязательный)
      * @param {string} [req.query.serial_number] - Серийный номер (необязательный)
      * @param {string} [req.query.created_at] - Дата создания (необязательный)
+     * @param {number} [req.query.page] - Номер страницы (необязательный)
+     * @param {number} [req.query.limit] - Количество объектов на странице (необязательный)
      * @param {Object} res - Объект ответа
      * @return {Promise<*>} - JSON-ответ со списком произведенных товаров
      */
     getProducedProducts: async (req, res) => {
+        const {
+            product_id,
+            contract_id,
+            storage_location,
+            serial_number,
+            created_at,
+            page = 1,
+            limit = 10
+        } = req.query;
+        const offset = (page - 1) * limit;
+
+        let query = 'SELECT * FROM produced_objects WHERE 1=1';
+        let values = [];
+
+        if (product_id) {
+            values.push(product_id);
+            query += ` AND product_id = $${ values.length }`;
+        }
+
+        if (contract_id) {
+            values.push(contract_id);
+            query += ` AND contract_id = $${ values.length }`;
+        }
+
+        if (storage_location) {
+            values.push(storage_location);
+            query += ` AND storage_location = $${ values.length }`;
+        }
+
+        if (serial_number) {
+            values.push(serial_number);
+            query += ` AND serial_number = $${ values.length }`;
+        }
+
+        if (created_at) {
+            values.push(created_at);
+            query += ` AND DATE(created_at) = $${ values.length }`;
+        }
+
+        query += ` LIMIT $${ values.length + 1 } OFFSET $${ values.length + 2 }`;
+        values.push(limit, offset);
+
         try {
-            const { product_id, contract_id, storage_location, serial_number, created_at } = req.query;
-
-            let query = 'SELECT * FROM produced_objects WHERE 1=1';
-            let values = [];
-
-            if (product_id) {
-                values.push(product_id);
-                query += ` AND product_id = $${ values.length }`;
-            }
-
-            if (contract_id) {
-                values.push(contract_id);
-                query += ` AND contract_id = $${ values.length }`;
-            }
-
-            if (storage_location) {
-                values.push(storage_location);
-                query += ` AND storage_location = $${ values.length }`;
-            }
-
-            if (serial_number) {
-                values.push(serial_number);
-                query += ` AND serial_number = $${ values.length }`;
-            }
-
-            if (created_at) {
-                values.push(created_at);
-                query += ` AND DATE(created_at) = $${ values.length }`;
-            }
-
             const { rows } = await pool.query(query, values);
-
             res.status(200).json({ success: true, data: rows });
         } catch (error) {
             console.error('Ошибка запроса:', error);
@@ -82,7 +96,7 @@ const FactoryController = {
 
             // Получаем информацию о товаре
             const productQuery = 'SELECT * FROM products WHERE id = $1 AND disable = false';
-            const productValues = [ product_id ];
+            const productValues = [product_id];
             const { rows: productRows } = await client.query(productQuery, productValues);
 
             if (productRows.length === 0) {
@@ -106,7 +120,7 @@ const FactoryController = {
 
             // Получаем информацию о складе
             const warehouseQuery = 'SELECT * FROM Warehouses WHERE id = $1 AND disable = false';
-            const warehouseValues = [ storage_location ];
+            const warehouseValues = [storage_location];
             const { rows: warehouseRows } = await client.query(warehouseQuery, warehouseValues);
 
             if (warehouseRows.length === 0) {
@@ -217,7 +231,7 @@ const FactoryController = {
 
             // Увеличиваем занимаемое место на складе на соответствующее количество
             const updateWarehouseQuery = 'UPDATE Warehouses SET current_capacity = current_capacity + $1 WHERE id = $2 RETURNING *';
-            const updateWarehouseValues = [ totalOccupiedSpace, storage_location ];
+            const updateWarehouseValues = [totalOccupiedSpace, storage_location];
             await client.query(updateWarehouseQuery, updateWarehouseValues);
 
             // Создаем запись в financial_situation
@@ -229,7 +243,7 @@ const FactoryController = {
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
             `;
             const operationTypeId = 1;
-            const insertFinancialSituationValues = [ currentDate, false, 0, totalProductionCost, -totalProductionCost, newBalance, operationTypeId ];
+            const insertFinancialSituationValues = [currentDate, false, 0, totalProductionCost, -totalProductionCost, newBalance, operationTypeId];
             await client.query(insertFinancialSituationQuery, insertFinancialSituationValues);
 
             await client.query('COMMIT');

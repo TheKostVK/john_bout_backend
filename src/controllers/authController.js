@@ -22,7 +22,7 @@ const authController = {
             return res.status(200).json({ success: true, data: rows[0] });
         } catch (error) {
             console.error('Ошибка запроса:', error);
-            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${error.detail}` });
+            res.status(500).json({ success: false, data: [], message: `Ошибка сервера. Причина: ${ error.detail }` });
         }
     },
 };
